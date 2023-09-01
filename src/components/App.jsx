@@ -1,49 +1,50 @@
-import React, {useState} from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React, { useEffect } from 'react';
 import { Section } from './Section/Section';
 import { Filter } from './Filter/Filter';
 import { ContactForm } from './ContactForm/ContactForm';
 import { ContactList } from './ContactList/ContactList';
-import { addContact, deleteContact, updateFilter } from '../redux/contacts/contacts-slice';
+import Notiflix from 'notiflix';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchContacts, addContact, deleteContact } from '../redux/operations';
+import {updateFilter} from '../redux/contacts-slice'
 import { nanoid } from '@reduxjs/toolkit';
 
 export const App = () => {
-  const contacts = useSelector(state => state.contacts.contacts);
-  const [duplicateContactMessage, setDuplicateContactMessage] = useState('');
+  const contacts = useSelector(state => state.contacts.contacts.items);
   const filter = useSelector(state => state.contacts.filter);
   const dispatch = useDispatch();
 
-  const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(filter.toLowerCase())
-  );
+ const filteredContacts = contacts.filter(contact =>
+  contact.name && contact.name.toLowerCase().includes(filter.toLowerCase())
+);
 
   const addContactHandler = ({ name, number }) => {
-  const existingContact = contacts.find(contact => contact.name.toLowerCase() === name.toLowerCase());
+    const existingContact = contacts.find(contact => contact.name && contact.name.toLowerCase() === name.toLowerCase());
 
-  if (existingContact) {
-    setDuplicateContactMessage(`${name} is already in contacts`);
+    if (existingContact) {
+      Notiflix.Notify.failure(`${name} is already in contacts`);
     return;
-  }
+    }
 
-  dispatch(addContact({ id: nanoid(), name, number }));
-  setDuplicateContactMessage(''); 
-};
+    dispatch(addContact({ id: nanoid(), name, number }));
+  };
 
   const filterChangeHandler = e => {
-  
     dispatch(updateFilter(e.target.value));
   };
 
   const onDelete = contactId => {
-  
     dispatch(deleteContact(contactId));
   };
 
+ useEffect(() => {
+    dispatch(fetchContacts());
+ }, [dispatch]);
+  
   return (
     <>
       <Section title="Phonebook">
         <ContactForm onSubmit={addContactHandler} />
-        {duplicateContactMessage && alert(`${duplicateContactMessage}`)}
       </Section>
 
       <Section title="Contacts">
